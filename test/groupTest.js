@@ -132,3 +132,30 @@ Step(
   }
 );
 }, 1000);
+
+
+// Test group completion with multiple parallel groups.
+expect("test6: 123");
+expect("test6: 5");
+Step(
+  function makeGroup() {
+    var group1 = this.group();
+    var group2 = this.group();
+    var group3 = this.group();
+    var p1 = group1(), p2 = group2(), p3 = group3();
+    // fs callbacks can sneak in before process.nextTick runs...
+    require('fs').readFile('', function() { p1(null, 1); });
+    setTimeout(function() { p2(null, 2); }, 5);
+    setTimeout(function() { p3(null, 3); }, 10);
+  },
+  function groupResults(err, g1, g2, g3) {
+      if(err) throw err;
+      console.log("test6: " + g1 + g2 + g3);
+      fulfill("test6: " + g1 + g2 + g3);
+      return 5;
+  },
+  function terminate(err, num) {
+      if(err) throw err;
+      fulfill("test6: " + num);
+  }
+);
